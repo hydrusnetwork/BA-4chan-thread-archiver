@@ -1,5 +1,5 @@
-4handownloader
-==============
+4chandownloader
+===============
 
 4chan thread downloader.
 
