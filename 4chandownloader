@@ -12,10 +12,8 @@
 #
 
 import os
-import re
-import string
-import sys
 import time
+import json
 from docopt import docopt
 import requests
 
@@ -28,173 +26,75 @@ Usage:
 
 Options:
   --thumbs            Download thumbnails
-  --delay=<int>       Delay between thread checks [default: 10]
+  --delay=<int>       Delay between thread checks [default: 20]
   -h --help           Show help
   -v --version        Show version
 """
 
 def main(args):
-    #Regular Expressions
-    imgurl = re.compile('\w+\.4chan\.org/\w+/src/\d+\.(?:jpg|gif|png|jpeg)')
-    thumb = re.compile('thumbs\.4chan\.org/\w+/thumb/\d+s\.(?:jpg|gif|png|jpeg)')
-    thumbname = re.compile("\d+s\.(?:jpg|gif|png|jpeg)")
-    imgurl2 = re.compile('http://\w+\.4chan\.org/\w+/src/')
-    picname = re.compile('\d+\.(?:jpg|gif|png|jpeg)')
-    tname = re.compile('/\d+')
-    rs = re.compile('http://rapidshare.com/files/\d+/.*\.(?:rar|zip|avi|wmv|part\d+\.rar|\d+)''|http://megaupload.com/?d=........''|http://megaporn.com/?d=........')
-
-    #Initiate Variables
-    thread = args.get('<url>')
-    directory = args.get('<path>')
-    delay = args.get('--delay')
-    thumbs = args.get('--thumbs')
-
-    errorcount = 0
-
-    #Create directory name
-    dirname = str(tname.findall(thread))
-
-    #Clean directory name
-    dirname = dirname.replace('[', '')
-    dirname = dirname.replace(']', '')
-    dirname = dirname.replace(chr(39), '')
-    dirname = dirname.replace(chr(92), '')
-    dirname = dirname.replace(chr(47), '')
-    dname = dirname
-    dirname = os.path.join(directory, dirname)
-
-    print("Downloading to: " + dirname)
-    #Create directorty if it doesn't exist
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    if thumbs:
-        if not os.path.exists(os.path.join(dirname,"thumb")):
-            os.makedirs(os.path.join(dirname, "thumb"))
-        
-    #Add \ to directory name for image saving        
+    thread = args.get('<url>').split('/')[5]
+    board  = args.get('<url>').split('/')[3]
+    path   = args.get('<path>')
+    thumbs = args.get('--thumbs', False)
+    delay  = args.get('--delay')
 
     #Start
     while 1:
-        print("Scraping: " + thread)
+        r = requests.get('https://api.4chan.org/%s/res/%s.json' % (board, thread))
 
-        #Get page
-        try:
-            response = requests.get(thread)
-        except Exception as e:
-            if errorcount < 1:
-                errorcount = 1
-                print("Request failed, retrying in %s seconds (%s)" % (int(delay)/4, e))
-                time.sleep(int(delay))
-                response = requests.get(thread)
-
-        msg = response.text
-        errorcount = 0
-
-        #Find all pictures and rapidshare links
-        kwl = imgurl.findall(msg)
-        rsl = rs.findall(msg)
-        tl = thumb.findall(msg)
-
-        #Save pictures
-        for item in list(set(kwl)): #list(set(kwl)) removes duplicates
-        #Clean image URL and clean file name
-            filename = picname.findall(str(item))
-            fname = str(filename)
-            fname = fname.replace('[', '')
-            fname = fname.replace(']', '')
-            fname = fname.replace(chr(39), '')
-        #Download the image if it doesn't exists
-            if not os.path.isfile(os.path.join(dirname, fname)):
-                print("Downloading: %s" % item)
-                try:
-                    r = requests.get("https://%s" % item)
-                    open(os.path.join(dirname, fname), 'w').write(r.content)
-                    time.sleep(0.25)
-                except Exception as e:
-                    print("Image download failed, retrying in %s seconds (%s)" % (int(delay)/4, e))
-                    time.sleep(int(delay)/4)
-                    r = requests.get("https://%s" % item)
-                    print(fname)
-                    open(os.path.join(dirname, fname), 'w').write(r.content)
-                    time.sleep(0.25)
-            else:
-                print(str(fname) + " Exists... Trying next file.")
-
-
-        #Download thumbnails
+        if not os.path.exists(path):
+            os.makedirs(path)
+        if not os.path.exists(os.path.join(path, board)):
+            os.makedirs(os.path.join(path, board))
+        if not os.path.exists(os.path.join(path, board, thread)):
+            os.makedirs(os.path.join(path, board, thread))
         if thumbs:
-            for item3 in list(set(tl)): #list(set(kwl)) removes duplicates
-        #Clean image URL and clean file name
-                filename = thumbname.findall(str(item3))
-                fname = str(filename)
-                fname = fname.replace('[', '')
-                fname = fname.replace(']', '')
-                fname = fname.replace(chr(39), '')
-        #Download the image if it doesn't exists
-                if not os.path.isfile(os.path.join(dirname, "thumb", fname)):
-                    print("Downloading thumbnail: %s" % item3)
-                    try:
-                        r = requests.get("https://%s" % item3)
-                        open(os.path.join(dirname, "thumb", fname), 'w').write(r.content)
-                        time.sleep(0.25)
-                    except Exception as e:
-                        print("Thumbnail download failed, retrying in %s seconds (%s)" % (int(delay)/4, e))
-                        time.sleep(int(delay)/4)
-                        r = requests.get("https://%s" % item3)
-                        open(os.path.join(dirname, "thumb", fname), 'w').write(r.content)                        
-                        time.sleep(0.25)
+            if not os.path.exists(os.path.join(path, board, thread, 'thumbs')):
+                os.makedirs(os.path.join(path, board, thread, 'thumbs'))
+
+        print(' :: Board: %s' % board)
+        print(' :: Thread: %s' % thread)
+
+        dst = os.path.join(path, board, thread)
+        dst_thumbs = os.path.join(path, board, thread, 'thumbs')
+        for post in r.json['posts']:
+            if post.get('filename', False):
+                if post.get('filedeleted', False):
+                    continue
+                file_name = '%s%s' % (post['tim'], post['ext'])
+                file_path = os.path.join(dst, file_name)
+                file_url  = 'https://images.4chan.org/%s/src/%s' % (board, file_name)
+               
+                if not os.path.exists(file_path):
+                    print('%s downloading...' % file_name)
+                    i = requests.get(file_url)
+                    if i.status_code == 404:
+                        print(' | Failed, try later (%s)' % file_url)
+                    else:
+                        open(file_path, 'w').write(i.content)
                 else:
-                    print("%s (thumbnail) Exists... Trying next file." % fname)
-            
+                    print('%s already downloaded' % file_name)
 
-        #Replace URLs with local images locations
-        outp = open("%s.html" % (os.path.join(dirname, dname)), "w")
+                if thumbs:
+                    thumb_name = '%ss.jpg' % post['tim']
+                    thumb_path = os.path.join(dst_thumbs, thumb_name)
+                    thumb_url  = 'https://thumbs.4chan.org/%s/thumb/%s' % (board, thumb_name)
+                    if not os.path.exists(thumb_path):
+                        print('%s (thumb) downloading...' % thumb_name)
+                        i = requests.get(thumb_url)
+                        if i.status_code == 404:
+                            print(' | Failed, try later (%s)' % thumb_url)
+                        else:
+                            open(thumb_path, 'w').write(i.content)
+                    else:
+                        print('%s (thumb) already downloaded' % thumb_name)
 
-        for item3 in list(set(kwl)):
-            filename = picname.findall(str(item3))
-            fname = str(filename)
-            fname = fname.replace('[', '')
-            fname = fname.replace(']', '')
-            fname = fname.replace(chr(39), '')
-            fname = fname.replace("/", "")
-            msg = msg.replace(str(item3), fname)
-            strr = str(item3)
-            strr = strr.replace("https:", "")
-            msg = msg.replace(strr, fname)
-            msg = msg.replace("//" + fname, os.path.join(dirname, fname))
-
-        if thumbs:
-            treg = re.compile("//\d\.thumbs.4chan.org/.?/")
-            for item4 in list(set(tl)):
-                filename = thumbname.findall(str(item4))
-                fname = str(filename)
-                fname = fname.replace('[', '')
-                fname = fname.replace(']', '')
-                fname = fname.replace(chr(39), '')
-                msg = msg.replace("http:\\iqdb.org/?url=" + str(item4), chr(34) + "thumb" + chr(92) + fname + chr(34))
-                msg = msg.replace("http://www.google.com/searchbyimage?image_url=" + str(item4), chr(34) + "thumb" + chr(92) + fname + chr(34))
-                strr = str(item4)
-                msg = re.sub(treg, "", msg)
-        outp.write(msg.encode('ascii', 'ignore'))
-        outp.close()
-
-
-        #Save download links to a text file if they exist
-        if not rs.search(msg):
-            print("Nothing to download.")
-        else:
-            print("Downloads found!")
-            foutrs = open(dirname + "dl.txt", "w")
-            for item2 in list(set(rsl)):
-                foutrs.write(str(item2) + "\n")
-            foutrs.close()
+        json.dump(r.json, open(os.path.join(dst, '%s.json' % thread), 'w'))
 
         #Wait to execute code again
         print("Waiting %s seconds before retrying" % delay)
         time.sleep(int(delay))
 
-
 if __name__ == '__main__':
     args = docopt(doc, version=0.1)
     main(args)
-    
