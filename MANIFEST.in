@@ -1,0 +1,3 @@
+include LICENSE MANIFEST.in README.rst
+recursive-exclude * *.pyc 
+recursive-exclude * *.pyo
