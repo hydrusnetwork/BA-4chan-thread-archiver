@@ -15,7 +15,7 @@ if sys.argv[-1] == 'publish':
 
 setup(
 		name             = '4chandownloader',
-		version          = '0.2',
+		version          = '0.3',
 		description      = '4chan thread downloader',
 		long_description = open('README.rst').read(), 
 		license          = open('LICENSE').read(),
