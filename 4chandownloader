@@ -25,7 +25,8 @@ import re
 import errno
 
 doc = """4chandownloader.py, uses 4chan API to download thread images and/or 
-thumbnails, along with thread HTML and JSON.
+thumbnails, along with thread HTML, JSON, and a list of referenced external
+links.
 
 Usage:
   4chandownloader.py <url> <path> [--delay=<int>] [--nothumbs] [--thumbsonly]
@@ -50,7 +51,7 @@ def make_sure_path_exists(path):
             raise
 
 # Download any file using requests
-def downloadFile(fname, dst_dir, file_url):
+def download_file(fname, dst_dir, file_url):
     # Destination of downloaded file
     file_dst = os.path.join(dst_dir, fname)
     
@@ -97,6 +98,12 @@ def main(args):
     fourchan_images_url = 'https://images.4chan.org/%s/src/%s'
     fourchan_thumbs_url = 'https://thumbs.4chan.org/%s/thumb/%s'
     fourchan_boards_url = 'http://boards.4chan.org/%s/res/%s'
+    fourchan_images_regex = re.compile("http://images.4chan.org/\w+/src/")
+    fourchan_thumbs_regex = re.compile("http://\d+.thumbs.4chan.org/\w+/thumb/")
+
+    # The Ultimate URL Regex
+    # http://stackoverflow.com/questions/520031/whats-the-cleanest-way-to-extract-urls-from-a-string-using-python
+    linkregex = re.compile(r"""((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.‌​][a-z]{2,4}/)(?:[^\s()<>]+|(([^\s()<>]+|(([^\s()<>]+)))*))+(?:(([^\s()<>]+|(‌​([^\s()<>]+)))*)|[^\s`!()[]{};:'".,<>?«»“”‘’]))""", re.DOTALL)
 
     # paths to file destination folders
     # path - folder/board/thread/
@@ -118,12 +125,16 @@ def main(args):
 	# Create thumbs directory if thumbnails are needed
 	make_sure_path_exists(dst_dir)
 	if not thumbsonly:
-	make_sure_path_exists(dst_images_dir)
+	    make_sure_path_exists(dst_images_dir)
 	if thumbsonly or (not nothumbs):
-	make_sure_path_exists(dst_thumbs_dir)
+	    make_sure_path_exists(dst_thumbs_dir)
 	
 	# Grab thread JSON from 4chan API
 	r = requests.get(fourchan_api_url % (board, thread))
+	
+	# File to store list of all external links quoted in comments (overwrite upon each loop iteration)
+	linklist_dst = os.path.join(dst_dir, "external_links.txt")
+	linklist_file = open(linklist_dst, "w")
 	
 	for post in r.json['posts']:
 	    if post.get('filename', False):
@@ -133,43 +144,49 @@ def main(args):
 		
 		# Download images, if not only downloading thumbnails
 		if not thumbsonly:
-		    # Set filenames and paths for images
 		    image_name = '%s%s' % (post['tim'], post['ext'])
 		    image_url  = fourchan_images_url % (board, image_name)
-		    downloadFile(image_name, dst_images_dir, image_url)
+		    download_file(image_name, dst_images_dir, image_url)
 
 		# Download thumbnails by default, but not if user doesn't want it
 		if thumbsonly or (not nothumbs):
-		    # Set filenames and paths for thumbnails
 		    thumb_name = '%ss.jpg' % post['tim']
-		    thumb_url  = fourchan_thumbs_url % (board, thumb_name)
-		    downloadFile(thumb_name, dst_thumbs_dir, thumb_url)
+		    thumb_url = fourchan_thumbs_url % (board, thumb_name)
+		    download_file(thumb_name, dst_thumbs_dir, thumb_url)
+		
+	    # Go to the next comment if link not found
+	    if not linkregex.search(post['com']):
+		continue
+	    else:
+		# We need to get rid of all <wbr> tags before parsing
+		cleaned_com = re.sub(r'\<wbr\>', '', post['com'])
+		linklist = re.findall(linkregex, cleaned_com)
+		for item in linklist:
+		    print("Found link to external site, saving in %s:\n%s\n" % (linklist_dst, item[0]))
+		    linklist_file.write(item[0])	# re.findall creates tuple
+		    linklist_file.write('\n')	# subdivide with newlines
 
-	#
-	# Dumps thread in raw HTML format to `thread.html` file
-	# 
-	# Filename: ./board/thread/<thread-id>.html
-	# 
-	html_name = '%s.html' % thread
+	# Close linklist file after loop
+	linklist_file.close()
+
+	# Dumps thread in raw HTML format to `<thread-id>.html`
+	html_filename = "%s.html" % thread
 	html_url = fourchan_boards_url % (board, thread)
-	downloadFile(html_name, dst_dir, html_url)
+	download_file(html_filename, dst_dir, html_url)
 	
 	# Convert all links in HTML dump to use locally downloaded files
-	html_path = os.path.join(dst_dir, html_name)
+	html_path = os.path.join(dst_dir, html_filename)
 	file_replace(html_path, '"//', '"http://')
-	file_replace(html_path, "http://images.4chan.org/\w/src/", image_dir_name + "/")
-	file_replace(html_path, "http://\d.thumbs.4chan.org/\w/thumb/", thumb_dir_name + "/")
+	file_replace(html_path, fourchan_images_regex, image_dir_name + "/")
+	file_replace(html_path, fourchan_thumbs_regex, thumb_dir_name + "/")
 	
 	# (future) Download a local copy of all CSS files, and convert HTML links to use them (we need to use beautifulsoup to get links...)
 	#file_replace(html_path, "http://static.4chan.org/css/(\w+.\d+).css", "css/\\1.css")
 	
-	# 
-	# Dumps thread in JSON format to `threadid.json` file
-	# 
-	# Filename: ./board/thread/<thread-id>.json
-	# 
-	jsonPath = os.path.join(dst_dir, thread + ".json")
-	json.dump(r.json, open(jsonPath, 'w'))
+	# Dumps thread in JSON format to `<thread-id>.json` file
+	json_filename = "%s.json" % thread
+	json_path = os.path.join(dst_dir, json_filename)
+	json.dump(r.json, open(json_path, 'w'))
 
 	# Wait to execute code again
 	print("Waiting %s seconds before retrying" % delay)

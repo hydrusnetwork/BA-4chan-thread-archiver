@@ -106,4 +106,21 @@ For ease of transmission, this script should give the ability to transfer in `.c
 ## (FUTURE) Implement useful functions from other CSS/JS mods
 
 * Expand image in the current HTML
-* SauceNao and TinEye
+* IQDB/TinEye/Google/SauceNao
+
+## Make a list of all external links quoted in comments
+
+In the original version of the 4chandownloader script, the script would create a list of all rapidshare download links found in the thread; however, this function was removed when the new author transitioned to 4chan API.
+
+Sometimes the external links form an integral part of the story, or contain links to filesharing services of interest. The user might want to download such files, or save those sites in case they go down.
+
+I created a restored version that searches comments from the 4chan API and grabs all external URLs, rather than 3 filesharing sites. This set of commands is tacked to the image download loop. It then stores the URLs in an `external_links.txt` file subdivided with newlines, for the user to read or for `wget` to parse. 
+
+This presents a challenge; 4chan generally does not allow certain URL links on their site (to combat spam), so users tend to write URLs in ways that fool the site's URL regex (insert spaces, etc). We need something that will pull in even those links.
+
+[On DaringFireball](http://daringfireball.net/2010/07/improved_regex_for_matching_urls), there is a monster regex that will match nearly any URL. A version for Python can be found on [StackOverflow.](http://stackoverflow.com/questions/520031/whats-the-cleanest-way-to-extract-urls-from-a-string-using-python). We use this one.
+
+Additionally, when rendering to HTML, 4chan often adds `<wbr>` tags, indicating an optional line break. This tag tends to end up in the middle of URLs, screwing them up. So this statement is added to get rid of them:
+
+	# We need to get rid of all <wbr> tags before parsing
+	cleaned_com = re.sub(r'\<wbr\>', '', post['com'])

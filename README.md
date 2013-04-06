@@ -19,7 +19,8 @@ Usage
 ============
 
     4chandownloader.py, uses 4chan API to download thread images and/or 
-    thumbnails, along with thread HTML and JSON.
+    thumbnails, along with thread HTML, JSON, and a list of referenced external
+    links.
 
     Usage:
       4chandownloader.py <url> <path> [--delay=<int>] [--nothumbs] [--thumbsonly]
