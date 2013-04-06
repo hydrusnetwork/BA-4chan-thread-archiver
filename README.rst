@@ -37,6 +37,7 @@ Modifications
 
 * Downloads HTML dump of thread
 * New --thumbsonly option to download thumbnails and no images
+* Code modularization
 * More comments in code
 
 Installation

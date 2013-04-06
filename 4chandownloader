@@ -36,6 +36,8 @@ Options:
   -v --version        Show version
 """
 
+#def createPaths(path, board, thread):
+
 def main(args):
     # Copy data from arguments
     thread = args.get('<url>').split('/')[5]
@@ -49,6 +51,7 @@ def main(args):
     while 1:
 	r = requests.get('https://api.4chan.org/%s/res/%s.json' % (board, thread))
 
+#	createPaths(path, board, thread)
 	# Create paths if they don't exist
 	# Image path: ./<board>/<threadID>/image/
 	# Thumbnail path: ./<board>/<threadID>/thumbs/
@@ -65,27 +68,28 @@ def main(args):
 		os.makedirs(os.path.join(path, board, thread, 'images'))
 	
 	# Create thumbs directory if thumbnails are needed
-	if thumbs || thumbsonly:
+	if thumbs or thumbsonly:
 	    if not os.path.exists(os.path.join(path, board, thread, 'thumbs')):
 		os.makedirs(os.path.join(path, board, thread, 'thumbs'))
 
+	# destinations for dumps, modded to place into "images" folder analogous to "thumbs"
+	dst = os.path.join(path, board, thread)
+	dst_images = os.path.join(path, board, thread, 'images')
+	dst_thumbs = os.path.join(path, board, thread, 'thumbs')
+
 	print(' :: Board: %s' % board)
 	print(' :: Thread: %s' % thread)
-
-	# destinations for dumps, modded to place into "images" folder analogous to "thumbs"
-	dst = os.path.join(path, board, thread, 'images')
-	dst_thumbs = os.path.join(path, board, thread, 'thumbs')
 	
 	for post in r.json['posts']:
 	    if post.get('filename', False):
 		# Download images
-		if not thumbsonly
+		if not thumbsonly:
 		    if post.get('filedeleted', False):
 			continue
 		    
 		    # Set filenames and paths for images
 		    file_name = '%s%s' % (post['tim'], post['ext'])
-		    file_path = os.path.join(dst, file_name)
+		    file_path = os.path.join(dst_images, file_name)
 		    file_url  = 'https://images.4chan.org/%s/src/%s' % (board, file_name)
 		    
 		    # If the image doesn't exist, download it
@@ -100,7 +104,7 @@ def main(args):
 			print('%s already downloaded' % file_name)
 
 		# Only download thumbnails if user specifies to do so
-		if thumbs || thumbsonly:
+		if thumbs or thumbsonly:
 		    # Set filenames and paths for thumbnails
 		    thumb_name = '%ss.jpg' % post['tim']
 		    thumb_path = os.path.join(dst_thumbs, thumb_name)
@@ -120,12 +124,14 @@ def main(args):
 	# Dumps thread in raw HTML format to `thread.html` file
 	# (we need to convert all links )
 	html = requests.get('http://boards.4chan.org/%s/res/%s' % (board, thread))
-	f = open("%s.html", "w" % thread)
+	htmlFName = thread + ".html"
+	f = open(os.path.join(dst, htmlFName), "w")
 	f.write(html.content)
 	f.close()
 	
 	# Dumps thread in JSON format to `threadid.json` file
-	json.dump(r.json, open(os.path.join(dst, '%s.json' % thread), 'w'))
+	jsonFName = thread + ".json"
+	json.dump(r.json, open(os.path.join(dst, jsonFName), 'w'))
 
 	#Wait to execute code again
 	print("Waiting %s seconds before retrying" % delay)
