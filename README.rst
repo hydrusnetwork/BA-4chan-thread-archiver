@@ -20,17 +20,20 @@ Usage
 
 ::
 
-    Usage:
-      4chandownloader.py <url> <path> [--delay=<int>] [--thumbs] [--thumbsonly]
-      4chandownloader.py -h | --help
-      4chandownloader.py -v | --version
+4chandownloader.py, uses 4chan API to download thread images and/or 
+thumbnails, along with thread HTML and JSON.
 
-    Options:
-      --thumbs            Download thumbnails
-      --thumbsonly        Download thumbnails, no images
-      --delay=<int>       Delay between thread checks [default: 20]
-      -h --help           Show help
-      -v --version        Show version
+Usage:
+  4chandownloader.py <url> <path> [--delay=<int>] [--thumbs] [--thumbsonly]
+  4chandownloader.py -h | --help
+  4chandownloader.py -v | --version
+
+Options:
+  --thumbs            Download thumbnails
+  --thumbsonly        Download thumbnails, no images
+  --delay=<int>       Delay between thread checks [default: 20]
+  -h --help           Show help
+  -v --version        Show version
 
 Modifications
 ============

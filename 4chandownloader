@@ -3,7 +3,7 @@
 
 # Part of the JSON-based-chanarchiver by Lawrence Wu, 2012/04/04
 # Originally from https://github.com/socketubs/4chandownloader
-# Modded to save in seperate images folder, download plain HTML
+# Rewritten to save in seperate images folder, download plain HTML, modularization, comments, and code cleanup
 
 #
 # Initial release Nov. 5, 2009
@@ -20,8 +20,10 @@ import time
 import json
 from docopt import docopt
 import requests
+import errno
 
-doc = """4chandownloader.py, download 4chan thread images.
+doc = """4chandownloader.py, uses 4chan API to download thread images and/or 
+thumbnails, along with thread HTML and JSON.
 
 Usage:
   4chandownloader.py <url> <path> [--delay=<int>] [--thumbs] [--thumbsonly]
@@ -36,7 +38,30 @@ Options:
   -v --version        Show version
 """
 
-#def createPaths(path, board, thread):
+# Create paths if they don't exist 
+# replace with `os.makedirs(path,exist_ok=True)` in python3
+def make_sure_path_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
+# Download any file using requests
+def downloadFile(file_name, dst, file_url):
+    # Destination of downloaded file
+    file_dst = os.path.join(dst, file_name)
+    
+    # If the file doesn't exist, download it
+    if not os.path.exists(file_dst):
+	print('%s downloading...' % file_name)
+	i = requests.get(file_url)
+	if i.status_code == 404:
+	    print(' | Failed, try later (%s)' % file_url)
+	else:
+	    open(file_dst, 'w').write(i.content)
+    else:
+	print('%s already downloaded' % file_name)
 
 def main(args):
     # Copy data from arguments
@@ -47,93 +72,76 @@ def main(args):
     thumbsonly = args.get('--thumbsonly', False)
     delay  = args.get('--delay')
 
-    #Start
+    # paths to file destination folders
+    # path - folder/board/thread/
+    # image path - folder/board/thread/images/<image-timestamp>.<ext>
+    # thumbnails path - folder/board/thread/thumbs/<image-timestamp>s.jpg
+    dst = os.path.join(path, board, thread)
+    dst_images = os.path.join(dst, 'images')
+    dst_thumbs = os.path.join(dst, 'thumbs')
+
+    # Create paths if they don't exist
+    # Don't create images folder if user only wants thumbnails
+    # Create thumbs directory if thumbnails are needed
+    make_sure_path_exists(dst)
+    if not thumbsonly:
+      make_sure_path_exists(dst_images)
+    if thumbs or thumbsonly:
+      make_sure_path_exists(dst_thumbs)
+
+    # paths to 4chan URLs (with regex!)
+    fourchan_api_url = 'https://api.4chan.org/%s/res/%s.json'
+    fourchan_images_url = 'https://images.4chan.org/%s/src/%s'
+    fourchan_thumbs_url = 'https://thumbs.4chan.org/%s/thumb/%s'
+    fourchan_boards_url = 'http://boards.4chan.org/%s/res/%s'
+
+    # Begin file dump loop
     while 1:
-	r = requests.get('https://api.4chan.org/%s/res/%s.json' % (board, thread))
-
-#	createPaths(path, board, thread)
-	# Create paths if they don't exist
-	# Image path: ./<board>/<threadID>/image/
-	# Thumbnail path: ./<board>/<threadID>/thumbs/
-	if not os.path.exists(path):
-	    os.makedirs(path)
-	if not os.path.exists(os.path.join(path, board)):
-	    os.makedirs(os.path.join(path, board))
-	if not os.path.exists(os.path.join(path, board, thread)):
-	    os.makedirs(os.path.join(path, board, thread))
-
-	# Don't create images folder if user only wants thumbnails
-	if not thumbsonly:
-	    if not os.path.exists(os.path.join(path, board, thread, 'images')):
-		os.makedirs(os.path.join(path, board, thread, 'images'))
-	
-	# Create thumbs directory if thumbnails are needed
-	if thumbs or thumbsonly:
-	    if not os.path.exists(os.path.join(path, board, thread, 'thumbs')):
-		os.makedirs(os.path.join(path, board, thread, 'thumbs'))
-
-	# destinations for dumps, modded to place into "images" folder analogous to "thumbs"
-	dst = os.path.join(path, board, thread)
-	dst_images = os.path.join(path, board, thread, 'images')
-	dst_thumbs = os.path.join(path, board, thread, 'thumbs')
-
 	print(' :: Board: %s' % board)
 	print(' :: Thread: %s' % thread)
 	
+	# Grab thread JSON from 4chan API
+	r = requests.get(fourchan_api_url % (board, thread))
+	
 	for post in r.json['posts']:
 	    if post.get('filename', False):
-		# Download images
+		# If file is deleted, move on
+		if post.get('filedeleted', False):
+		    continue
+		
+		# Download images, if not only downloading thumbnails
 		if not thumbsonly:
-		    if post.get('filedeleted', False):
-			continue
-		    
 		    # Set filenames and paths for images
-		    file_name = '%s%s' % (post['tim'], post['ext'])
-		    file_path = os.path.join(dst_images, file_name)
-		    file_url  = 'https://images.4chan.org/%s/src/%s' % (board, file_name)
-		    
-		    # If the image doesn't exist, download it
-		    if not os.path.exists(file_path):
-			print('%s downloading...' % file_name)
-			i = requests.get(file_url)
-			if i.status_code == 404:
-			    print(' | Failed, try later (%s)' % file_url)
-			else:
-			    open(file_path, 'w').write(i.content)
-		    else:
-			print('%s already downloaded' % file_name)
+		    image_name = '%s%s' % (post['tim'], post['ext'])
+		    image_url  = fourchan_images_url % (board, image_name)
+		    downloadFile(image_name, dst_images, image_url)
 
 		# Only download thumbnails if user specifies to do so
 		if thumbs or thumbsonly:
 		    # Set filenames and paths for thumbnails
 		    thumb_name = '%ss.jpg' % post['tim']
-		    thumb_path = os.path.join(dst_thumbs, thumb_name)
-		    thumb_url  = 'https://thumbs.4chan.org/%s/thumb/%s' % (board, thumb_name)
-		    
-		    # If the thumbnail doesn't exist, download it
-		    if not os.path.exists(thumb_path):
-			print('%s (thumb) downloading...' % thumb_name)
-			i = requests.get(thumb_url)
-			if i.status_code == 404:
-			    print(' | Failed, try later (%s)' % thumb_url)
-			else:
-			    open(thumb_path, 'w').write(i.content)
-		    else:
-			print('%s (thumb) already downloaded' % thumb_name)
+		    thumb_url  = fourchan_thumbs_url % (board, thumb_name)
+		    downloadFile(thumb_name, dst_thumbs, thumb_url)
 
+	#
 	# Dumps thread in raw HTML format to `thread.html` file
-	# (we need to convert all links )
-	html = requests.get('http://boards.4chan.org/%s/res/%s' % (board, thread))
-	htmlFName = thread + ".html"
-	f = open(os.path.join(dst, htmlFName), "w")
-	f.write(html.content)
-	f.close()
+	# (FUTURE) we need to convert all links
+	# 
+	# Filename: ./board/thread/<thread-id>.html
+	# 
+	html_name = '%s.html' % thread
+	html_url = fourchan_boards_url % (board, thread)
+	downloadFile(html_name, dst, html_url)
 	
+	# 
 	# Dumps thread in JSON format to `threadid.json` file
-	jsonFName = thread + ".json"
-	json.dump(r.json, open(os.path.join(dst, jsonFName), 'w'))
+	# 
+	# Filename: ./board/thread/<thread-id>.json
+	# 
+	jsonPath = os.path.join(dst, thread + ".json")
+	json.dump(r.json, open(jsonPath, 'w'))
 
-	#Wait to execute code again
+	# Wait to execute code again
 	print("Waiting %s seconds before retrying" % delay)
 	time.sleep(int(delay))
 
