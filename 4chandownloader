@@ -20,6 +20,8 @@ import time
 import json
 from docopt import docopt
 import requests
+
+import re
 import errno
 
 doc = """4chandownloader.py, uses 4chan API to download thread images and/or 
@@ -38,7 +40,7 @@ Options:
   -v --version        Show version
 """
 
-# Create paths if they don't exist 
+# Recursively create paths if they don't exist 
 # replace with `os.makedirs(path,exist_ok=True)` in python3
 def make_sure_path_exists(path):
     try:
@@ -48,20 +50,38 @@ def make_sure_path_exists(path):
             raise
 
 # Download any file using requests
-def downloadFile(file_name, dst, file_url):
+def downloadFile(fname, dst_dir, file_url):
     # Destination of downloaded file
-    file_dst = os.path.join(dst, file_name)
+    file_dst = os.path.join(dst_dir, fname)
     
     # If the file doesn't exist, download it
     if not os.path.exists(file_dst):
-	print('%s downloading...' % file_name)
+	print('%s downloading...' % fname)
 	i = requests.get(file_url)
 	if i.status_code == 404:
 	    print(' | Failed, try later (%s)' % file_url)
 	else:
 	    open(file_dst, 'w').write(i.content)
     else:
-	print('%s already downloaded' % file_name)
+	print('%s already downloaded' % fname)
+
+# File in place regex function originally scripted by steveha on StackOverflow: 
+# http://stackoverflow.com/questions/1597649/replace-strings-in-files-by-python
+# Notice: `\1` notation could be interpreted by python as `\x01`! Escape it with a second backslash: `\\1`  
+def file_replace(fname, pat, s_after):
+    # first, see if the pattern is even in the file.
+    with open(fname) as f:
+	if not any(re.search(pat, line) for line in f):
+	    return # pattern does not occur in file so we are done.
+
+    # pattern is in the file, so perform replace operation.
+    with open(fname) as f:
+	out_fname = fname + ".tmp"
+	out = open(out_fname, "w")
+	for line in f:
+	    out.write(re.sub(pat, s_after, line))
+	out.close()
+	os.rename(out_fname, fname)
 
 def main(args):
     # Copy data from arguments
@@ -72,28 +92,30 @@ def main(args):
     thumbsonly = args.get('--thumbsonly', False)
     delay  = args.get('--delay')
 
-    # paths to file destination folders
-    # path - folder/board/thread/
-    # image path - folder/board/thread/images/<image-timestamp>.<ext>
-    # thumbnails path - folder/board/thread/thumbs/<image-timestamp>s.jpg
-    dst = os.path.join(path, board, thread)
-    dst_images = os.path.join(dst, 'images')
-    dst_thumbs = os.path.join(dst, 'thumbs')
-
-    # Create paths if they don't exist
-    # Don't create images folder if user only wants thumbnails
-    # Create thumbs directory if thumbnails are needed
-    make_sure_path_exists(dst)
-    if not thumbsonly:
-      make_sure_path_exists(dst_images)
-    if thumbs or thumbsonly:
-      make_sure_path_exists(dst_thumbs)
-
     # paths to 4chan URLs (with regex!)
     fourchan_api_url = 'https://api.4chan.org/%s/res/%s.json'
     fourchan_images_url = 'https://images.4chan.org/%s/src/%s'
     fourchan_thumbs_url = 'https://thumbs.4chan.org/%s/thumb/%s'
     fourchan_boards_url = 'http://boards.4chan.org/%s/res/%s'
+
+    # paths to file destination folders
+    # path - folder/board/thread/
+    # image path - folder/board/thread/img/<image-timestamp>.<ext>
+    # thumbnails path - folder/board/thread/thumb/<image-timestamp>s.jpg
+    image_dir_name = "img"
+    thumb_dir_name = "thumb"
+    dst_dir = os.path.join(path, board, thread)
+    dst_images_dir = os.path.join(dst_dir, image_dir_name)
+    dst_thumbs_dir = os.path.join(dst_dir, thumb_dir_name)
+
+    # Create paths if they don't exist
+    # Don't create images folder if user only wants thumbnails
+    # Create thumbs directory if thumbnails are needed
+    make_sure_path_exists(dst_dir)
+    if not thumbsonly:
+      make_sure_path_exists(dst_images_dir)
+    if thumbs or thumbsonly:
+      make_sure_path_exists(dst_thumbs_dir)
 
     # Begin file dump loop
     while 1:
@@ -114,31 +136,39 @@ def main(args):
 		    # Set filenames and paths for images
 		    image_name = '%s%s' % (post['tim'], post['ext'])
 		    image_url  = fourchan_images_url % (board, image_name)
-		    downloadFile(image_name, dst_images, image_url)
+		    downloadFile(image_name, dst_images_dir, image_url)
 
 		# Only download thumbnails if user specifies to do so
 		if thumbs or thumbsonly:
 		    # Set filenames and paths for thumbnails
 		    thumb_name = '%ss.jpg' % post['tim']
 		    thumb_url  = fourchan_thumbs_url % (board, thumb_name)
-		    downloadFile(thumb_name, dst_thumbs, thumb_url)
+		    downloadFile(thumb_name, dst_thumbs_dir, thumb_url)
 
 	#
 	# Dumps thread in raw HTML format to `thread.html` file
-	# (FUTURE) we need to convert all links
 	# 
 	# Filename: ./board/thread/<thread-id>.html
 	# 
 	html_name = '%s.html' % thread
 	html_url = fourchan_boards_url % (board, thread)
-	downloadFile(html_name, dst, html_url)
+	downloadFile(html_name, dst_dir, html_url)
+	
+	# Convert all links in HTML dump to use locally downloaded files
+	html_path = os.path.join(dst_dir, html_name)
+	file_replace(html_path, '"//', '"http://')
+	file_replace(html_path, "http://images.4chan.org/\w/src/", image_dir_name + "/")
+	file_replace(html_path, "http://\d.thumbs.4chan.org/\w/thumb/", thumb_dir_name + "/")
+	
+	# (future) Download a local copy of all CSS files, and convert HTML links to use them (we need to use beautifulsoup to get links...)
+	#file_replace(html_path, "http://static.4chan.org/css/(\w+.\d+).css", "css/\\1.css")
 	
 	# 
 	# Dumps thread in JSON format to `threadid.json` file
 	# 
 	# Filename: ./board/thread/<thread-id>.json
 	# 
-	jsonPath = os.path.join(dst, thread + ".json")
+	jsonPath = os.path.join(dst_dir, thread + ".json")
 	json.dump(r.json, open(jsonPath, 'w'))
 
 	# Wait to execute code again
