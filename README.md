@@ -22,12 +22,12 @@ Usage
     thumbnails, along with thread HTML and JSON.
 
     Usage:
-      4chandownloader.py <url> <path> [--delay=<int>] [--thumbs] [--thumbsonly]
+      4chandownloader.py <url> <path> [--delay=<int>] [--nothumbs] [--thumbsonly]
       4chandownloader.py -h | --help
       4chandownloader.py -v | --version
 
     Options:
-      --thumbs            Download thumbnails
+      --nothumbs          Don't download thumbnails
       --thumbsonly        Download thumbnails, no images
       --delay=<int>       Delay between thread checks [default: 20]
       -h --help           Show help

@@ -28,12 +28,12 @@ doc = """4chandownloader.py, uses 4chan API to download thread images and/or
 thumbnails, along with thread HTML and JSON.
 
 Usage:
-  4chandownloader.py <url> <path> [--delay=<int>] [--thumbs] [--thumbsonly]
+  4chandownloader.py <url> <path> [--delay=<int>] [--nothumbs] [--thumbsonly]
   4chandownloader.py -h | --help
   4chandownloader.py -v | --version
 
 Options:
-  --thumbs            Download thumbnails
+  --nothumbs          Don't download thumbnails
   --thumbsonly        Download thumbnails, no images
   --delay=<int>       Delay between thread checks [default: 20]
   -h --help           Show help
@@ -88,7 +88,7 @@ def main(args):
     thread = args.get('<url>').split('/')[5]
     board  = args.get('<url>').split('/')[3]
     path   = args.get('<path>')
-    thumbs = args.get('--thumbs', False)
+    nothumbs = args.get('--nothumbs', False)
     thumbsonly = args.get('--thumbsonly', False)
     delay  = args.get('--delay')
 
@@ -108,19 +108,19 @@ def main(args):
     dst_images_dir = os.path.join(dst_dir, image_dir_name)
     dst_thumbs_dir = os.path.join(dst_dir, thumb_dir_name)
 
-    # Create paths if they don't exist
-    # Don't create images folder if user only wants thumbnails
-    # Create thumbs directory if thumbnails are needed
-    make_sure_path_exists(dst_dir)
-    if not thumbsonly:
-      make_sure_path_exists(dst_images_dir)
-    if thumbs or thumbsonly:
-      make_sure_path_exists(dst_thumbs_dir)
-
     # Begin file dump loop
     while 1:
 	print(' :: Board: %s' % board)
 	print(' :: Thread: %s' % thread)
+	
+	# Create paths if they don't exist
+	# Don't create images folder if user only wants thumbnails
+	# Create thumbs directory if thumbnails are needed
+	make_sure_path_exists(dst_dir)
+	if not thumbsonly:
+	make_sure_path_exists(dst_images_dir)
+	if thumbsonly or (not nothumbs):
+	make_sure_path_exists(dst_thumbs_dir)
 	
 	# Grab thread JSON from 4chan API
 	r = requests.get(fourchan_api_url % (board, thread))
@@ -138,8 +138,8 @@ def main(args):
 		    image_url  = fourchan_images_url % (board, image_name)
 		    downloadFile(image_name, dst_images_dir, image_url)
 
-		# Only download thumbnails if user specifies to do so
-		if thumbs or thumbsonly:
+		# Download thumbnails by default, but not if user doesn't want it
+		if thumbsonly or (not nothumbs):
 		    # Set filenames and paths for thumbnails
 		    thumb_name = '%ss.jpg' % post['tim']
 		    thumb_url  = fourchan_thumbs_url % (board, thumb_name)

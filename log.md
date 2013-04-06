@@ -102,3 +102,8 @@ We would have to convert all the functions into a class, with a GUI and CLI inte
 ## (FUTURE) chan.zip file format
 
 For ease of transmission, this script should give the ability to transfer in `.chan.zip` format. All this does is zip up the folder, just like an `.epub`. This will provide a universal archive format for transferring information between archives, or between anons on 4chan, which may happen a lot.
+
+## (FUTURE) Implement useful functions from other CSS/JS mods
+
+* Expand image in the current HTML
+* SauceNao and TinEye
