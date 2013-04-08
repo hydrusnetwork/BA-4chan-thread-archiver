@@ -73,7 +73,7 @@ Convert link to plain file path:
 
 We need to grab the names of all those css files, and use them to save a copy of the stylesheets locally under `css/`.
 
-I used [this tutorial](http://palewi.re/posts/2008/04/05/python-recipe-open-a-file-read-through-it-print-each-line-matching-a-search-term/) to understand how to grab all matching lines.
+I used [this tutorial](http://palewi.re/posts/2008/04/05/python-recipe-open-a-file-read-through-it-print-each-line-matching-a-search-term/) and this [stackoverflow](http://stackoverflow.com/questions/6174825/getting-filenames-matching-an-extension-using-beautifulsoup) to understand how to grab all matching lines.
 
 * Use beautifulsoup to find links with `<link href=>` tag
 
