@@ -25,14 +25,14 @@ import py4chan
 
 from docopt import docopt
 
-doc = """4chandownloader, uses 4chan API to download thread images and/or 
+doc = """4chan-thread-archiver, uses 4chan API to download thread images and/or 
 thumbnails, along with thread HTML, JSON, and a list of referenced external
 links. Uses the py4chan library.
 
 Usage:
-  4chandownloader <url> [--path=<string>] [--delay=<int>] [--nothumbs] [--thumbsonly]
-  4chandownloader -h | --help
-  4chandownloader -v | --version
+  4chan-thread-archiver <url> [--path=<string>] [--delay=<int>] [--nothumbs] [--thumbsonly]
+  4chan-thread-archiver -h | --help
+  4chan-thread-archiver -v | --version
 
 Options:
   --nothumbs          Don't download thumbnails
@@ -51,7 +51,7 @@ FOURCHAN_BOARDS_URL = 'http://boards.4chan.org/%s/res/%s' # board, thread
 # folder names for image and thumbnails
 _IMAGE_DIR_NAME = "img"
 _THUMB_DIR_NAME = "thumb"
-_DEFAULT_FOLDER = "4chan"
+_DEFAULT_FOLDER = "4chan-saved-threads"
 
 _DUMP_COMPLETE_STRING = "Dump complete. To resume dumping the same thread,\nrun this script again."
 

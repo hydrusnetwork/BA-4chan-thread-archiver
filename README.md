@@ -1,7 +1,7 @@
 BA 4chan API Thread Archiver
 ===============
 
-This script archive all images, thumbnails, JSON, and converted HTML of a 4chan thread, using the [4chan API](https://github.com/4chan/4chan-API). The script will continue until the thread 404s or the connection is lost.
+This script archives all images, thumbnails, JSON, and converted HTML of a 4chan thread, using the [4chan API](https://github.com/4chan/4chan-API). The script will continue until the thread 404s or the connection is lost.
 
 Part of the JSON-based-chanarchiver by Lawrence Wu, built 2012/04/04
 
@@ -13,15 +13,17 @@ This script:
 * Converts links in HTML to use the downloaded images
 * Keeps downloading until 404 (with a user-set delay)
 
-* Forked from [Socketub's 4chandownloader.](https://github.com/socketubs/4chandownloader)
+* Forked from [Socketub's 4chan-thread-archiver.](https://github.com/socketubs/4chan-thread-archiver)
+
+By default, the script saves to the folder `4chan-saved-threads` in the current working directory.
 
 Usage
 ============
 
     Usage:
-      4chandownloader <url> [--path=<string>] [--delay=<int>] [--nothumbs] [--thumbsonly]
-      4chandownloader -h | --help
-      4chandownloader -v | --version
+      4chan-thread-archiver <url> [--path=<string>] [--delay=<int>] [--nothumbs] [--thumbsonly]
+      4chan-thread-archiver -h | --help
+      4chan-thread-archiver -v | --version
 
     Options:
       --nothumbs          Don't download thumbnails
@@ -33,7 +35,7 @@ Usage
 Modifications to original
 ============
 
-This script has almost fully diverged from the original, and 
+This script is almost 
 
 * Based on py4chan
 * Downloads HTML dump of thread
@@ -53,5 +55,5 @@ Wishlist
 Installation
 ============
 
-    pip install 4chandownloader
-    4chandownloader http://boards.4chan.org/b/res/423861837 4chanarchives --delay 5 --thumbs
+    pip install BA-4chan-thread-archiver
+    4chan-thread-archiver http://boards.4chan.org/b/res/423861837 --path=saved-threads --delay 5 --thumbsonly

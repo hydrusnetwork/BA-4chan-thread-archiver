@@ -14,7 +14,7 @@ if sys.argv[-1] == 'publish':
 	sys.exit()
 
 setup(
-		name             = 'BA-4chandownloader',
+		name             = 'BA-4chan-thread-archiver',
 		version          = '0.4',
 		description      = '4chan API-based thread archiver',
 		long_description = open('README.rst').read(), 
@@ -25,8 +25,8 @@ setup(
 #		author           = 'Socketubs',
 #		author_email     = 'geoffrey@lehee.name',
 #		url              = 'https://github.com/Socketubs/4chandownloader',
-		keywords         = '4chan downloader images',
-		scripts          = ['4chandownloader', '4chandownloader-no-py4chan'],
+		keywords         = '4chan downloader images json dump',
+		scripts          = ['4chan-thread-archiver', '4chan-thread-archiver-orig'],
 		install_requires = ['requests==0.14.0', 'docopt==0.5.0'],
 		classifiers      = (
 		'Intended Audience :: Developers',
