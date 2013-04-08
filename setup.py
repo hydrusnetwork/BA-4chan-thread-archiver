@@ -14,9 +14,9 @@ if sys.argv[-1] == 'publish':
 	sys.exit()
 
 setup(
-		name             = '4chandownloader',
-		version          = '0.3',
-		description      = '4chan thread downloader',
+		name             = 'BA-4chandownloader',
+		version          = '0.4',
+		description      = '4chan API-based thread archiver',
 		long_description = open('README.rst').read(), 
 		license          = open('LICENSE').read(),
 		author           = 'Lawrence Wu',
@@ -26,7 +26,7 @@ setup(
 #		author_email     = 'geoffrey@lehee.name',
 #		url              = 'https://github.com/Socketubs/4chandownloader',
 		keywords         = '4chan downloader images',
-		scripts          = ['4chandownloader'],
+		scripts          = ['4chandownloader', '4chandownloader-no-py4chan'],
 		install_requires = ['requests==0.14.0', 'docopt==0.5.0'],
 		classifiers      = (
 		'Intended Audience :: Developers',

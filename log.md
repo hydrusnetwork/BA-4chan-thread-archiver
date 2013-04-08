@@ -101,12 +101,22 @@ We would have to convert all the functions into a class, with a GUI and CLI inte
 
 ## (FUTURE) chan.zip file format
 
-For ease of transmission, this script should give the ability to transfer in `.chan.zip` format. All this does is zip up the folder, just like an `.epub`. This will provide a universal archive format for transferring information between archives, or between anons on 4chan, which may happen a lot.
+For ease of transmission, this script should give the ability to transfer in `.chan.zip` format. All this does is zip up the folder, just like an `.epub`; saving a bit of space. This will provide a universal archive format for transferring information between archives, or between anons on 4chan, which may happen a lot.
+
+We don't have to restrict ourselves to `.zip`; in theory, we can use any archive format that is convenient. However, to reduce incompatibility, we should restrict ourselves to the best formats for the job: `.zip` and `.7z`
+
+* `.zip` - PKZIP, the standard archive format for Windows-based systems.
+* `.7z` or `.lzma` or `.xz` - LZMA, the open-source heavy compression format. It is the king of the archivers; however, it demands a lot more power and time than `.zip`, and may not be as suitable for mobile devices.
+* `.tar.gz` and `.tar.bz2` - GNU zip and bzip2, the standard archive formats for Unix-based systems. The fundamental flaw of these formats is that they rely on `.tar`, an antiquated tape-backup archive format that does not allow straight file deletion. However, they do compress and decompress better than zip, despite generally using the same algorithm.
 
 ## (FUTURE) Implement useful functions from other CSS/JS mods
 
 * Expand image in the current HTML
 * IQDB/TinEye/Google/SauceNao
+
+## Pretty Print JSON
+
+By adding `sort_keys=True, indent=2, separators=(',', ': ')` as arguments to the `json.dump()` function, we can make the JSON much more readable. It only takes a kilobyte or two extra, so it's worth it.
 
 ## Make a list of all external links quoted in comments
 
