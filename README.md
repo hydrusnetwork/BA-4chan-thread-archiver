@@ -35,13 +35,15 @@ Usage
 Modifications to original
 ============
 
-This script is almost 
+This script has changed considerably from the original it was forked from. Here is a list of additions:
 
 * Based on py4chan
 * Downloads HTML dump of thread
 * New --thumbsonly option to download thumbnails and no images
 * Code modularization
 * More comments in code
+
+More info and a full journal can be found in `log.md`.
 
 Wishlist
 =========
