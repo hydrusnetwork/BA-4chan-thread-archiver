@@ -4,22 +4,33 @@ JSON Chanarchiver
 Abstract
 ---------
 
-The current methods of archiving 4chan threads locally are inefficient, ineffective, and incomplete. Currently, most anons rely on the "Right-click/Save Page As" function, which dumps the whole HTML page vertabrim and only saves thumbnails. To supplement this flaw, image dumping scripts exist, but are not linked to by the HTML dumps.
+The current methods of archiving 4chan threads locally are inefficient, ineffective, and incomplete. Currently, most anons rely on the "Right-click/Save Page As" function, which dumps the whole HTML page vertabrim and only saves thumbnails. To supplement this flaw, image dumping scripts exist, but the full size images are obviously not linked to by the HTML dumps.
 
-While online archives exist, some of which (like fuuka) can continuously archive an entire board, quite a few important boards are left untouched. Also, to save disk space, most of these archivers tend not to save full sized images; quite problematic when the majority of them cannot be found elsewhere. Additionally, these archives tend to face site crushing amounts of visitors, not to mention DDoSes from historical revisionists. 
+While online archives exist, some of which (like fuuka) can continuously archive an entire board, quite a few important boards are left untouched. Also, to save disk space, most of these archivers tend not to save full sized images; quite problematic when the majority of them cannot be found elsewhere. Additionally, these archives tend to face site crushing amounts of visitors, not to mention DDoSes from historical revisionists.
 
-Chanarchive is unique in that it takes on the effort to accept threads from all of 4chan; but the caveat is that to be permanently saved, more than 10 people that happen to see the thread at the same time must take the time to go to the site, create an account, and vote for archival. In theory, this prevents junk from clogging up the site; in practice, value is the the eye of the beholder, and even a thread that was interesting to 5 people in the world is still worth saving. And Chanarchive has had it's share of takedowns, eleventh-hour rescues, and revisionist moderators. 
+Chanarchive is unique in that it takes on the effort to accept threads from all of 4chan; but the caveat is that for a thread to be permanently saved, more than 10 people that happen to see the thread at the same time must take the time to go to the site, create an account, and vote for archival. 
 
-With the advent of the 4chan API, the site now outputs nice clean JSON for machine parsing. JSON 
+In theory, this system prevents junk from clogging up the site; in practice, value is the the eye of the beholder, and even a thread that was interesting to 3 people in the whole world is still worth saving. And Chanarchive has had it's share of takedowns, eleventh-hour rescues, and revisionist moderators.
 
-Placeholder Implementation
+Independent, local archives still have their place. They're under the user's full control, and take whatever the user fancies. They cost almost nothing, and make it possible to view threads when there is no internet.
+
+With the advent of the 4chan API, the site now gives out threads in nice clean JSON, rather than the HTML mess of the past. This makes it possible
+
+Reference Implementation
 --------------------------
 
 Since an actual JSON to HTML converter is not the easiest thing to build, we will dump the plain HTML along with the JSON for the moment.
 
-* Dump images, thumbs, JSON, and HTML using 4chandownloader.py
+* Dump images, thumbs, JSON
+  * Using a modded version of `4chandownloader.py`, now modded to use `py-4chan` wrapper 
+* (FUTURE) Convert JSON to HTML
+  * Not implemented in reference implementation yet
 * Dump HTML page and convert to local links
-* Dump Images (optional) - Using the Chandler, needs to be modded to dump JSON
+  * using dump_html() and file_replace()
+* (FUTURE) Save CSS locally each time
+  * file_replace() function already made to convert HTML to use local links. Now need to actually save the CSS for each dump.
+* (FUTURE) PyQt GUI
+  * Based on the Chandler?
 
 Implementation
 --------------
